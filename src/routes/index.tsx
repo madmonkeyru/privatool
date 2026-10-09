@@ -93,7 +93,7 @@ function Home() {
   }
 
   return (
-    <main className="mx-auto min-h-dvh max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
+    <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
       <header className="flex items-center gap-3">
         <div className="grid grid-cols-3 gap-1 rounded-xl bg-ink p-2" aria-hidden="true">
           {Array.from({ length: 9 }, (_, index) => (

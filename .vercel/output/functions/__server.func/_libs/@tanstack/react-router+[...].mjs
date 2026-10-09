@@ -7967,6 +7967,26 @@ function RouterProvider({ router, ...rest }) {
 	});
 }
 //#endregion
+//#region node_modules/@tanstack/react-router/dist/esm/useLocation.js
+/**
+* Read the current location from the router state with optional selection.
+* Useful for subscribing to just the pieces of location you care about.
+*
+* Options:
+* - `select`: Project the `location` object to a derived value
+* - `structuralSharing`: Enable structural sharing for stable references
+*
+* @returns The current location (or selected value).
+* @link https://tanstack.com/router/latest/docs/framework/react/api/router/useLocationHook
+*/
+function useLocation(opts) {
+	const router = useRouter();
+	{
+		const location = router.stores.location.get();
+		return opts?.select ? opts.select(location) : location;
+	}
+}
+//#endregion
 //#region node_modules/@tanstack/react-router/dist/esm/Asset.js
 var noopScriptHandler = () => {};
 function setScriptAttrs(script, attrs) {
@@ -18238,4 +18258,4 @@ var renderRouterToStream = async ({ request, router, responseHeaders, children }
 	}
 };
 //#endregion
-export { getScriptPreloadAttrs as A, isDangerousProtocol as B, crossSerializeStream as C, toCrossJSONStream as D, toCrossJSONAsync as E, _getRenderedMatches as F, isNotFound as G, dehydrateSsrMatchId as H, executeRewriteInput as I, require_react as K, invariant as L, resolveManifestAssetLink as M, resolveManifestCssLink as N, createInlineCssPlaceholderAsset as O, waitForReason as P, createSieveCache as R, createStream as S, isStream as T, isRedirect as U, isPromise as V, rootRouteId as W, createFileRoute as _, isSsrResponse as a, require_jsx_runtime as b, stripSsrResponseBody as c, Scripts as d, HeadContent as f, lazyRouteComponent as g, Outlet as h, disposeSsrResponse as i, getStylesheetHref as j, createInlineCssStyleAsset as k, createHydrationScripts as l, createRouter as m, bindSsrResponseToRequest as n, normalizeSsrResponse as o, RouterProvider as p, defineHandlerCallback as r, replaceSsrResponse as s, renderRouterToStream as t, GLOBAL_TSR as u, createRootRoute as v, fromJSON as w, createPlugin as x, useRouter as y, decodePath as z };
+export { createInlineCssPlaceholderAsset as A, createSieveCache as B, createPlugin as C, isStream as D, fromJSON as E, resolveManifestCssLink as F, isRedirect as G, isDangerousProtocol as H, waitForReason as I, require_react as J, rootRouteId as K, _getRenderedMatches as L, getScriptPreloadAttrs as M, getStylesheetHref as N, toCrossJSONAsync as O, resolveManifestAssetLink as P, executeRewriteInput as R, require_jsx_runtime as S, crossSerializeStream as T, isPromise as U, decodePath as V, dehydrateSsrMatchId as W, lazyRouteComponent as _, isSsrResponse as a, Link as b, stripSsrResponseBody as c, Scripts as d, HeadContent as f, Outlet as g, createRouter as h, disposeSsrResponse as i, createInlineCssStyleAsset as j, toCrossJSONStream as k, createHydrationScripts as l, RouterProvider as m, bindSsrResponseToRequest as n, normalizeSsrResponse as o, useLocation as p, isNotFound as q, defineHandlerCallback as r, replaceSsrResponse as s, renderRouterToStream as t, GLOBAL_TSR as u, createFileRoute as v, createStream as w, useRouter as x, createRootRoute as y, invariant as z };

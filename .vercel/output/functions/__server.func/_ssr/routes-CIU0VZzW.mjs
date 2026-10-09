@@ -1,7 +1,7 @@
 import { i as __toESM } from "../_runtime.mjs";
-import { K as require_react, b as require_jsx_runtime } from "../_libs/@tanstack/react-router+[...].mjs";
+import { J as require_react, S as require_jsx_runtime } from "../_libs/@tanstack/react-router+[...].mjs";
 import { i as Check, r as Copy, t as Undo2 } from "../_libs/lucide-react.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-Dt2SFw_m.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-CIU0VZzW.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var GLYPH = {
@@ -209,7 +209,7 @@ function Home() {
 		});
 	}
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("main", {
-		className: "mx-auto min-h-dvh max-w-5xl px-4 py-6 sm:px-6 sm:py-10",
+		className: "mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10",
 		children: [
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("header", {
 				className: "flex items-center gap-3",

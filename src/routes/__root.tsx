@@ -1,6 +1,7 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
+import { ToolSwitch } from "@/components/tool-switch";
 import appCss from "../styles.css?url";
 
 const APP_NAME = "Ninefold";
@@ -34,6 +35,9 @@ export const Route = createRootRoute({
       <body>
         <PreviewHostBridge />
         <AuthProvider>
+          <header className="sticky top-0 z-30 flex h-12 items-center justify-end border-b border-line/70 bg-bg/90 px-4 backdrop-blur-sm sm:px-6">
+            <ToolSwitch />
+          </header>
           <Outlet />
         </AuthProvider>
         <Scripts />

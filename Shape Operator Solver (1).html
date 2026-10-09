@@ -1,0 +1,519 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Shape Operator Solver</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow column, like the game screen. Answer pinned on top, inputs in play order, step-by-step path last. */
+:root{
+  --bg:#eef3f3; --surface:#ffffff; --surface2:#f4f8f8; --ink:#14262b; --muted:#566b71; --line:#d0dcde;
+  --accent:#0b7a7c; --accent-ink:#ffffff; --accent-soft:#d4eeed;
+  --bad:#b3322f; --bad-soft:#fbe3e1;
+  --tile:#eceff1; --tile-line:#cfd7db; --tile-ink:#4b5b60;
+  --font-body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e191c; --surface:#16252a; --surface2:#1c2f35; --ink:#e5eef0; --muted:#93a8ad; --line:#2b3f45;
+    --accent:#43c9c3; --accent-ink:#062321; --accent-soft:#12403f;
+    --bad:#ff9a95; --bad-soft:#3a1f20;
+    --tile:#dfe5e8; --tile-line:#b9c3c8; --tile-ink:#4b5b60;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e191c; --surface:#16252a; --surface2:#1c2f35; --ink:#e5eef0; --muted:#93a8ad; --line:#2b3f45;
+  --accent:#43c9c3; --accent-ink:#062321; --accent-soft:#12403f;
+  --bad:#ff9a95; --bad-soft:#3a1f20;
+  --tile:#dfe5e8; --tile-line:#b9c3c8; --tile-ink:#4b5b60;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--font-body);padding-inline:16px;padding-block:20px 56px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+
+h1{margin:0;font-size:22px;font-weight:600;letter-spacing:-.01em}
+.lede{margin:4px 0 0;color:var(--muted);max-width:46ch}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.toolbar .lab{font-size:12px;color:var(--muted);margin-right:2px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 11px;font-size:13px}
+.btn:hover{border-color:var(--accent)}
+.btn.solid{background:var(--ink);color:var(--bg);border-color:transparent}
+.note{margin:0;font-size:13px;color:var(--accent);font-weight:500}
+.note:empty{display:none}
+
+/* Answer */
+.answer{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;border-radius:14px;padding:13px 16px;border:1px solid var(--line);background:var(--surface);box-shadow:0 8px 20px -12px rgba(0,0,0,.4);display:grid;gap:6px}
+.answer .k{font-size:11px;letter-spacing:.09em;text-transform:uppercase;font-weight:600;opacity:.8}
+.answer .msg{margin:0;font-size:15px}
+.answer.ok{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.answer.err{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.picks{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.picks li{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 14px}
+.picks .who{font-size:13px;min-width:86px;opacity:.9}
+.digits{font-family:var(--font-mono);font-weight:600;font-size:30px;line-height:1.15;letter-spacing:.24em;font-variant-numeric:tabular-nums}
+.picks .where{font-size:14px;font-weight:600}
+.combos{margin:2px 0 0;padding:0;list-style:none;display:grid;gap:3px;font-family:var(--font-mono);font-size:13px}
+
+/* Sections */
+.block{display:grid;gap:10px}
+.block>h2{margin:0;font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.block>h2 .btn{text-transform:none;letter-spacing:0;font-weight:400;padding:3px 9px;font-size:12px}
+.kindtools{display:inline-flex;gap:6px}
+.levels{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.lvl{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 4px;display:grid;gap:1px;text-align:center}
+.lvl b{font-weight:600;font-size:14px}
+.lvl span{font-size:12px;color:var(--muted)}
+.lvl.on{background:var(--accent);border-color:transparent;color:var(--accent-ink)}
+.lvl.on span{color:inherit;opacity:.85}
+
+.slots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;max-width:380px}
+.slot{aspect-ratio:1;border-radius:12px;background:var(--tile);border:1.5px solid var(--tile-line);position:relative;display:grid;place-items:center;padding:0}
+.slot .sym{width:58%;height:auto}
+.slot .pos{position:absolute;left:7px;top:4px;font:500 11px var(--font-mono);color:var(--tile-ink)}
+.slot.empty{background:transparent;border:1.5px dashed var(--line);cursor:default}
+.slot.empty .pos{color:var(--muted)}
+.slot.next{border:1.5px solid var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.palette{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:8px;max-width:380px}
+.pal{aspect-ratio:1;border-radius:10px;background:var(--tile);border:1px solid var(--tile-line);display:grid;place-items:center;padding:0}
+.pal .sym{width:56%;height:auto}
+.pal:hover{border-color:var(--accent)}
+.pal:disabled{opacity:.28;cursor:default}
+.swatches{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.sw{width:26px;height:26px;border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--line);padding:0}
+.sw.on{box-shadow:0 0 0 2px var(--ink)}
+.auto{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 11px;font-size:12px}
+.auto.on{background:var(--ink);color:var(--bg);border-color:transparent}
+.hint{margin:0;font-size:13px;color:var(--muted)}
+
+/* Operators */
+.ops{display:grid;gap:10px}
+.op{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:10px}
+.op-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.op-name{font-weight:600}
+.op-name small{font-weight:400;color:var(--muted);margin-left:6px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:5px 12px;font-size:13px}
+.seg button.on{background:var(--accent);color:var(--accent-ink)}
+.num{width:100%;min-width:0;font:600 22px/1.2 var(--font-mono);letter-spacing:.3em;padding:9px 10px 9px calc(10px + .3em);border:1.5px solid var(--line);border-radius:8px;background:var(--surface2);color:var(--ink);text-align:center;font-variant-numeric:tabular-nums}
+.num::placeholder{color:var(--muted);opacity:.45}
+.num.bad{border-color:var(--bad);background:var(--bad-soft)}
+.optgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:10px}
+.optwrap{display:grid;gap:4px;min-width:0}
+.optlab{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.optwrap .num{font-size:19px;letter-spacing:.2em;padding-left:calc(10px + .2em)}
+.tick{font-size:12px;font-weight:600;color:var(--accent);visibility:hidden}
+.optwrap.pick .num{border-color:var(--accent);background:var(--accent-soft)}
+.optwrap.pick .tick{visibility:visible}
+.optfoot{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.step{display:inline-flex;align-items:center;gap:6px}
+.step button{width:26px;height:26px;border-radius:7px;border:1px solid var(--line);background:var(--surface);padding:0;line-height:1}
+.need{margin:0;font-size:13px;color:var(--muted)}
+.need b{font-family:var(--font-mono);letter-spacing:.15em;color:var(--ink)}
+.need:empty{display:none}
+
+/* Trace */
+.trace{list-style:none;margin:0;padding:0;display:grid}
+.trace .st{display:grid;grid-template-columns:62px 1fr;align-items:center;gap:8px}
+.trace .lab{font-size:12px;color:var(--muted)}
+.mini{display:flex;gap:6px}
+.mini .t{width:38px;height:38px;border-radius:9px;background:var(--tile);border:1px solid var(--tile-line);display:grid;place-items:center}
+.mini .t .sym{width:62%;height:auto}
+.trace .lk{display:flex;align-items:center;gap:8px;margin-left:28px;padding-block:5px;border-left:2px solid var(--line);padding-left:16px}
+.chip{font-size:12px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:2px 10px}
+.chip b{font-family:var(--font-mono);font-weight:600;letter-spacing:.18em;margin-left:10px}
+.chip i{font-style:normal;color:var(--muted);margin-left:6px}
+
+.help{font-size:13px;color:var(--muted);display:grid;gap:6px;border-top:1px solid var(--line);padding-top:14px}
+.help p{margin:0;max-width:60ch}
+.help code{font-family:var(--font-mono);font-size:12.5px;color:var(--ink);letter-spacing:.12em}
+@media (prefers-reduced-motion:no-preference){.answer,.optwrap .num,.slot{transition:background .15s,border-color .15s}}
+</style>
+
+<main class="app">
+  <header>
+    <h1>Shape Operator Solver</h1>
+    <p class="lede">Copy the game screen into the tool. The operator to pick shows at the top as soon as every field is filled.</p>
+  </header>
+
+  <div class="toolbar">
+    <span class="lab">Examples</span>
+    <button class="btn" data-act="example" data-n="1">1</button>
+    <button class="btn" data-act="example" data-n="2">2</button>
+    <button class="btn" data-act="example" data-n="3">3</button>
+    <button class="btn solid" data-act="reset" style="margin-left:auto">New puzzle</button>
+  </div>
+  <p class="note" id="note"></p>
+
+  <section class="answer" id="answer" aria-live="polite"></section>
+
+  <section class="block">
+    <h2>Difficulty</h2>
+    <div class="levels" id="levels"></div>
+  </section>
+
+  <section class="block">
+    <h2>Top row <button class="btn" data-act="clear-top">Clear</button></h2>
+    <div class="slots" id="top-slots"></div>
+    <div id="top-pal"></div>
+  </section>
+
+  <section class="block">
+    <h2>Bottom row <button class="btn" data-act="clear-bottom">Clear</button></h2>
+    <div class="slots" id="bot-slots"></div>
+    <div id="bot-pal"></div>
+  </section>
+
+  <section class="block">
+    <h2>Operators <span class="kindtools" id="kind-tools"><button class="btn" data-act="all-choose">All Choose</button><button class="btn" data-act="default-kinds">Only last Choose</button></span></h2>
+    <p class="hint">Mix Given and Choose rows in any order. If the game offers options at every step, set every row to Choose and enter the options for each.</p>
+    <div class="ops" id="ops"></div>
+  </section>
+
+  <section class="block">
+    <h2>Step by step</h2>
+    <div id="trace"></div>
+  </section>
+
+  <footer class="help">
+    <p><b>Reading an operator.</b> Each digit is the original position of the symbol that ends up in that slot. <code>4 2 3 1</code> puts the 4th symbol first, then the 2nd, the 3rd and the 1st.</p>
+    <p><b>Given</b> operators are already shown on the game screen, and the tool applies them first. <b>Choose</b> rows are the ones you pick from. Type the options left to right as shown. With more than one Choose row, enter the options for every row so the answer is unique.</p>
+  </footer>
+</main>
+
+<script>
+(function(){
+// ==SOLVER==
+var PERMS=[];
+(function gen(a){ if(a.length===4){PERMS.push(a);return;} for(var i=0;i<4;i++){ if(a.indexOf(i)<0) gen(a.concat(i)); } })([]);
+function parseOp(s){
+  if(!/^[1-4]{4}$/.test(s)) return null;
+  var a=s.split('').map(function(c){return +c-1;});
+  return (new Set(a)).size===4 ? a : null;
+}
+function applyOp(seq,op){ return op.map(function(i){return seq[i];}); }
+function sameSeq(a,b){ return a.every(function(v,i){return v===b[i];}); }
+function samePerm(a,b){ return a.slice().sort().join('|')===b.slice().sort().join('|'); }
+function search(top,bottom,cands){
+  var sols=[],total=0,pick=new Array(cands.length);
+  (function rec(i,seq){
+    if(i===cands.length){ if(sameSeq(seq,bottom)){ total++; if(sols.length<300) sols.push(pick.slice()); } return; }
+    var list=cands[i]||PERMS.map(function(op){return {op:op,idx:null};});
+    for(var k=0;k<list.length;k++){ pick[i]=list[k]; rec(i+1,applyOp(seq,list[k].op)); }
+  })(0,top);
+  return {sols:sols,total:total};
+}
+function wait(msg){ return {state:'wait',msg:msg}; }
+function fail(msg){ return {state:'error',msg:msg}; }
+function analyse(inp){
+  var top=inp.top,bottom=inp.bottom,rows=inp.rows,i,j;
+  var nt=top.filter(Boolean).length; if(nt<4) return wait('Pick the top row shapes ('+nt+' of 4).');
+  var nb=bottom.filter(Boolean).length; if(nb<4) return wait('Pick the bottom row shapes ('+nb+' of 4).');
+  if(!samePerm(top,bottom)) return fail('The bottom row must use the same four shapes as the top row.');
+  var cands=[];
+  for(i=0;i<rows.length;i++){
+    var r=rows[i];
+    if(r.kind==='given'){
+      if(!r.op) return wait('Enter operator '+(i+1)+'.');
+      var p=parseOp(r.op);
+      if(!p) return r.op.length<4 ? wait('Finish operator '+(i+1)+'.') : fail('Operator '+(i+1)+' must use each digit from 1 to 4 once.');
+      cands.push([{op:p,idx:null}]);
+    } else {
+      var list=[];
+      for(j=0;j<r.opts.length;j++){
+        var o=r.opts[j]; if(!o) continue;
+        var q=parseOp(o);
+        if(q){ list.push({op:q,idx:j}); }
+        else if(o.length<4){ return wait('Finish option '+(j+1)+' of operator '+(i+1)+'.'); }
+        else { return fail('Option '+(j+1)+' of operator '+(i+1)+' must use each digit from 1 to 4 once.'); }
+      }
+      cands.push(list.length?list:null);
+    }
+  }
+  var res=search(top,bottom,cands);
+  var unknown=[]; rows.forEach(function(r,k){ if(r.kind==='choose') unknown.push(k); });
+  var free=unknown.filter(function(k){return cands[k]===null;});
+  if(res.total===0) return {state:'none',hasChoice:unknown.length>0};
+  if(res.total===1){
+    var sol=res.sols[0],seqs=[top];
+    sol.forEach(function(c){ seqs.push(applyOp(seqs[seqs.length-1],c.op)); });
+    return {state:'ok',sol:sol,seqs:seqs,unknown:unknown};
+  }
+  return {state:'multi',total:res.total,sols:res.sols,unknown:unknown,freeCount:free.length};
+}
+// ==END SOLVER==
+
+/* ---------- Symbols ---------- */
+var SHAPES=[
+  {id:'star',name:'Star',color:'#7b2fa3'},{id:'triangle',name:'Triangle',color:'#1f2f8f'},
+  {id:'circle',name:'Circle',color:'#d81b60'},{id:'plus',name:'Plus',color:'#f59e0b'},
+  {id:'square',name:'Square',color:'#e0534a'},{id:'diamond',name:'Diamond',color:'#d94a6b'},
+  {id:'hexagon',name:'Hexagon',color:'#f2c21b'},{id:'play',name:'Play',color:'#a45fc4'},
+  {id:'pentagon',name:'Pentagon',color:'#1fa39a'},{id:'heart',name:'Heart',color:'#e0534a'}
+];
+var COLORS=[['#7b2fa3','Purple'],['#1f2f8f','Navy'],['#3b82c4','Blue'],['#1fa39a','Teal'],['#3fa553','Green'],['#f2c21b','Yellow'],['#f59e0b','Orange'],['#e0534a','Red'],['#d81b60','Pink']];
+function pts(a){ return '<polygon points="'+a.map(function(p){return p[0].toFixed(2)+','+p[1].toFixed(2);}).join(' ')+'"/>'; }
+function regular(n,r,cy){ var a=[]; for(var k=0;k<n;k++){ var t=-Math.PI/2+2*Math.PI*k/n; a.push([12+r*Math.cos(t),cy+r*Math.sin(t)]); } return a; }
+function starPts(){ var a=[]; for(var k=0;k<10;k++){ var t=-Math.PI/2+k*Math.PI/5,r=k%2?4.7:10.6; a.push([12+r*Math.cos(t),12.8+r*Math.sin(t)]); } return a; }
+function shapeInner(id){
+  switch(id){
+    case 'star': return pts(starPts());
+    case 'triangle': return '<polygon points="12,3 22,20.5 2,20.5"/>';
+    case 'circle': return '<circle cx="12" cy="12" r="9.5"/>';
+    case 'plus': return '<polygon points="9,3 15,3 15,9 21,9 21,15 15,15 15,21 9,21 9,15 3,15 3,9 9,9"/>';
+    case 'square': return '<rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/>';
+    case 'diamond': return '<polygon points="12,2 22,12 12,22 2,12"/>';
+    case 'hexagon': return pts(regular(6,10,12));
+    case 'play': return '<polygon points="6,3 21,12 6,21"/>';
+    case 'pentagon': return pts(regular(5,10.2,12.8));
+    case 'heart': return '<path d="M12 21C4.5 14.8 2.6 10.6 2.6 7.7A4.8 4.8 0 0 1 12 6.2a4.8 4.8 0 0 1 9.4 1.5c0 2.9-1.9 7.1-9.4 13.3z"/>';
+  }
+  return '';
+}
+function svg(s,c){ return '<svg class="sym" viewBox="0 0 24 24" fill="'+c+'" stroke="'+c+'" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true">'+shapeInner(s)+'</svg>'; }
+function key(x){ return x ? x.s+x.c : null; }
+function shapeName(s){ for(var i=0;i<SHAPES.length;i++) if(SHAPES[i].id===s) return SHAPES[i].name; return s; }
+function colorName(c){ for(var i=0;i<COLORS.length;i++) if(COLORS[i][0]===c) return COLORS[i][1]; return ''; }
+function symLabel(x){ return colorName(x.c)+' '+shapeName(x.s).toLowerCase(); }
+
+/* ---------- State ---------- */
+var LEVELS=[['Easy',1],['Medium',2],['Hard',3],['Expert',4]];
+var S={level:3,top:[null,null,null,null],bottom:[null,null,null,null],rows:[],color:'auto',note:'',kindsTouched:false};
+function blankRow(kind){ return {kind:kind,op:'',opts:['','','']}; }
+// Changing difficulty keeps any Given/Choose setup the user made; new rows copy the last row's type.
+function setLevel(n){
+  var prev=S.rows.slice();
+  S.level=n;
+  S.rows=Array.from({length:n},function(_,i){
+    var r=prev[i]||blankRow('given');
+    if(!S.kindsTouched) r.kind=(i===n-1)?'choose':'given';
+    else if(!prev[i]) r.kind=prev.length?prev[prev.length-1].kind:'choose';
+    return r;
+  });
+}
+function sym(s,c){ return {s:s,c:c}; }
+var EX={
+  1:function(){ return {level:2,
+    top:[sym('star','#7b2fa3'),sym('triangle','#1f2f8f'),sym('circle','#d81b60'),sym('plus','#f59e0b')],
+    bottom:[sym('plus','#f59e0b'),sym('triangle','#1f2f8f'),sym('star','#7b2fa3'),sym('circle','#d81b60')],
+    rows:[{kind:'given',op:'4231',opts:['','','']},{kind:'choose',op:'',opts:['1243','2314','1432']}]}; },
+  2:function(){ return {level:3,
+    top:[sym('play','#a45fc4'),sym('hexagon','#f2c21b'),sym('diamond','#d94a6b'),sym('star','#3b82c4')],
+    bottom:[sym('play','#a45fc4'),sym('diamond','#d94a6b'),sym('hexagon','#f2c21b'),sym('star','#3b82c4')],
+    rows:[{kind:'given',op:'2431',opts:['','','']},{kind:'given',op:'3214',opts:['','','']},{kind:'choose',op:'',opts:['4132','3142','2341']}]}; },
+  3:function(){ return {level:2,
+    top:[sym('circle','#3fa553'),sym('square','#e0534a'),sym('triangle','#f2c21b'),sym('plus','#3b82c4')],
+    bottom:[sym('square','#e0534a'),sym('plus','#3b82c4'),sym('circle','#3fa553'),sym('triangle','#f2c21b')],
+    rows:[{kind:'choose',op:'',opts:['2341','2431','3241']},{kind:'choose',op:'',opts:['2341','2431','3241']}]}; }
+};
+function loadExample(n){
+  var e=EX[n]();
+  S.level=e.level; S.top=e.top; S.bottom=e.bottom; S.rows=e.rows; S.color='auto'; S.kindsTouched=true;
+  S.note='Example '+n+' from your screenshots is loaded. Press New puzzle to enter your own.';
+}
+
+/* ---------- Rendering ---------- */
+var $=function(id){return document.getElementById(id);};
+var opsEl=$('ops');
+
+function renderNote(){ $('note').textContent=S.note; }
+function touch(){ if(S.note){ S.note=''; renderNote(); } }
+
+function renderLevels(){
+  $('levels').innerHTML=LEVELS.map(function(l,i){
+    var n=l[1];
+    return '<button class="lvl'+(S.level===n?' on':'')+'" data-act="level" data-n="'+n+'" aria-pressed="'+(S.level===n)+'"><b>'+l[0]+'</b><span>'+n+(n===1?' operator':' operators')+'</span></button>';
+  }).join('');
+}
+function slotsHTML(arr,which){
+  var firstEmpty=arr.indexOf(null);
+  return arr.map(function(x,i){
+    if(!x) return '<div class="slot empty'+(i===firstEmpty?' next':'')+'" aria-label="Empty slot '+(i+1)+'"><span class="pos">'+(i+1)+'</span></div>';
+    return '<button class="slot" data-act="slot-'+which+'" data-i="'+i+'" aria-label="Slot '+(i+1)+': '+symLabel(x)+'. Press to remove."><span class="pos">'+(i+1)+'</span>'+svg(x.s,x.c)+'</button>';
+  }).join('');
+}
+function renderShapes(){
+  $('top-slots').innerHTML=slotsHTML(S.top,'top');
+  $('bot-slots').innerHTML=slotsHTML(S.bottom,'bottom');
+  // top palette
+  var topFull=S.top.indexOf(null)<0;
+  if(topFull){ $('top-pal').innerHTML='<p class="hint">Tap a shape above to remove it.</p>'; }
+  else {
+    var sw='<div class="swatches" role="group" aria-label="Shape colour"><button class="auto'+(S.color==='auto'?' on':'')+'" data-act="color" data-c="auto">Auto colour</button>'+
+      COLORS.map(function(c){return '<button class="sw'+(S.color===c[0]?' on':'')+'" style="background:'+c[0]+'" data-act="color" data-c="'+c[0]+'" aria-label="'+c[1]+'" aria-pressed="'+(S.color===c[0])+'"></button>';}).join('')+'</div>';
+    var pal='<div class="palette">'+SHAPES.map(function(sh){
+      var c=S.color==='auto'?sh.color:S.color;
+      return '<button class="pal" data-act="pick-top" data-shape="'+sh.id+'" aria-label="'+sh.name+'">'+svg(sh.id,c)+'</button>';
+    }).join('')+'</div>';
+    $('top-pal').innerHTML='<div style="display:grid;gap:10px">'+sw+pal+'</div>';
+  }
+  // bottom tray: only the four top symbols
+  var botFull=S.bottom.indexOf(null)<0;
+  if(S.top.indexOf(null)>=0){ $('bot-pal').innerHTML='<p class="hint">Finish the top row first. The bottom row uses the same four shapes.</p>'; }
+  else if(botFull){ $('bot-pal').innerHTML='<p class="hint">Tap a shape above to remove it.</p>'; }
+  else {
+    var total={},used={},seen={},tray=[];
+    S.top.forEach(function(x){ total[key(x)]=(total[key(x)]||0)+1; });
+    S.bottom.forEach(function(x){ if(x) used[key(x)]=(used[key(x)]||0)+1; });
+    S.top.forEach(function(x){ if(!seen[key(x)]){ seen[key(x)]=1; tray.push(x); } });
+    $('bot-pal').innerHTML='<div class="palette">'+tray.map(function(x){
+      var dis=(used[key(x)]||0)>=total[key(x)];
+      return '<button class="pal" data-act="pick-bottom" data-key="'+key(x)+'"'+(dis?' disabled':'')+' aria-label="'+symLabel(x)+'">'+svg(x.s,x.c)+'</button>';
+    }).join('')+'</div>';
+  }
+}
+function optLabel(j,n){ return n===3 ? ['Left','Middle','Right'][j] : 'Option '+(j+1); }
+function renderOps(){
+  $('kind-tools').hidden=S.rows.length<2;
+  opsEl.innerHTML=S.rows.map(function(r,i){
+    var head='<div class="op-head"><span class="op-name">Operator '+(i+1)+(S.rows.length>1?'<small>'+(i===0?'applied first':'then')+'</small>':'')+'</span>'+
+      '<span class="seg" role="group" aria-label="Operator '+(i+1)+' type">'+
+      '<button data-act="kind" data-row="'+i+'" data-kind="given" class="'+(r.kind==='given'?'on':'')+'" aria-pressed="'+(r.kind==='given')+'">Given</button>'+
+      '<button data-act="kind" data-row="'+i+'" data-kind="choose" class="'+(r.kind==='choose'?'on':'')+'" aria-pressed="'+(r.kind==='choose')+'">Choose</button></span></div>';
+    var body;
+    if(r.kind==='given'){
+      body='<input class="num" id="op-'+i+'" data-row="'+i+'" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="4231" value="'+r.op+'" aria-label="Operator '+(i+1)+' digits">';
+    } else {
+      var n=r.opts.length;
+      body='<div class="optgrid">'+r.opts.map(function(o,j){
+        return '<label class="optwrap" data-wrap="'+i+'-'+j+'"><span class="optlab">'+optLabel(j,n)+'</span>'+
+          '<input class="num" id="opt-'+i+'-'+j+'" data-row="'+i+'" data-opt="'+j+'" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="1243" value="'+o+'" aria-label="Operator '+(i+1)+', '+optLabel(j,n)+' option">'+
+          '<span class="tick">&#10003; Pick this</span></label>';
+      }).join('')+'</div>'+
+      '<div class="optfoot"><span class="step"><button data-act="opt-count" data-row="'+i+'" data-d="-1" aria-label="Fewer options">&minus;</button>'+n+' options<button data-act="opt-count" data-row="'+i+'" data-d="1" aria-label="More options">+</button></span>'+(i>0&&S.rows[i-1].kind==='choose'?'<button class="btn" data-act="copy-opts" data-row="'+i+'">Same options as operator '+i+'</button>':'')+'<span>Leave blank if the game shows none.</span></div>'+
+      '<p class="need" id="need-'+i+'"></p>';
+    }
+    return '<div class="op">'+head+body+'</div>';
+  }).join('');
+}
+
+function digitsFmt(op){ return op.map(function(x){return x+1;}).join(''); }
+function mini(seq,look){ return '<div class="mini">'+seq.map(function(k){ var x=look[k]; return '<span class="t" title="'+symLabel(x)+'">'+svg(x.s,x.c)+'</span>'; }).join('')+'</div>'; }
+
+function renderStatus(){
+  var look={}; S.top.concat(S.bottom).forEach(function(x){ if(x) look[key(x)]=x; });
+  var R=analyse({top:S.top.map(key),bottom:S.bottom.map(key),rows:S.rows});
+
+  // field validity and highlights
+  opsEl.querySelectorAll('input').forEach(function(el){ el.classList.toggle('bad', el.value.length===4 && !parseOp(el.value)); });
+  opsEl.querySelectorAll('.pick').forEach(function(el){ el.classList.remove('pick'); });
+  opsEl.querySelectorAll('.need').forEach(function(el){ el.textContent=''; });
+
+  var a=$('answer'), html='';
+  a.className='answer';
+  if(R.state==='wait'){
+    html='<span class="k">Next</span><p class="msg">'+R.msg+'</p>';
+  } else if(R.state==='error'){
+    a.classList.add('err'); html='<span class="k">Check this</span><p class="msg">'+R.msg+'</p>';
+  } else if(R.state==='none'){
+    a.classList.add('err');
+    html='<span class="k">No match</span><p class="msg">'+(R.hasChoice?'None of the options fit these shapes. ':'These operators do not turn the top row into the bottom row. ')+'Check the shape order, the order of the operators and each digit.</p>';
+  } else if(R.state==='multi'){
+    a.classList.add('err');
+    var shown=R.sols.slice(0,6).map(function(sol){
+      return '<li>'+R.unknown.map(function(k){
+        var c=sol[k], pos=c.idx===null?'':optLabel(c.idx,S.rows[k].opts.length).toLowerCase()+' ';
+        return 'Op '+(k+1)+' '+pos+digitsFmt(c.op);
+      }).join('  &middot;  ')+'</li>';
+    }).join('');
+    html='<span class="k">'+R.total+' combinations fit</span><p class="msg">'+(R.freeCount>0?'Enter the options for every Choose row to get a single answer.':'The game has only one correct combination, so recheck the digits you typed and the shape order.')+'</p><ul class="combos">'+shown+(R.total>6?'<li>and '+(R.total-6)+' more</li>':'')+'</ul>';
+  } else if(R.state==='ok'){
+    if(R.unknown.length===0){
+      html='<span class="k">Verified</span><p class="msg">These operators turn the top row into the bottom row.</p>';
+      a.classList.add('ok');
+    } else {
+      a.classList.add('ok');
+      html='<span class="k">Pick</span><ul class="picks">'+R.unknown.map(function(k){
+        var c=R.sol[k], r=S.rows[k], where='No options entered';
+        if(c.idx!==null) where=optLabel(c.idx,r.opts.length)+(r.opts.length===3?' option':'');
+        var w=opsEl.querySelector('[data-wrap="'+k+'-'+c.idx+'"]'); if(w) w.classList.add('pick');
+        var need=$('need-'+k);
+        if(need && c.idx===null) need.innerHTML='Needed: <b>'+digitsFmt(c.op)+'</b>. Add the options from the game to see which one to tap.';
+        return '<li><span class="who">Operator '+(k+1)+'</span><span class="digits">'+digitsFmt(c.op)+'</span><span class="where">'+where+'</span></li>';
+      }).join('')+'</ul>';
+    }
+  }
+  a.innerHTML=html;
+
+  // trace
+  var t=$('trace');
+  if(R.state==='ok'){
+    var out='<ol class="trace"><li class="st"><span class="lab">Top</span>'+mini(R.seqs[0],look)+'</li>';
+    R.sol.forEach(function(c,i){
+      var tag=S.rows[i].kind==='given'?'given':(c.idx!==null?'picked':'needed');
+      var last=i===R.sol.length-1;
+      out+='<li class="lk"><span class="chip">Operator '+(i+1)+'<b>'+digitsFmt(c.op)+'</b><i>'+tag+'</i></span></li>';
+      out+='<li class="st"><span class="lab">'+(last?'Bottom':'After '+(i+1))+'</span>'+mini(R.seqs[i+1],look)+'</li>';
+    });
+    t.innerHTML=out+'</ol>';
+  } else {
+    t.innerHTML='<p class="hint">The path from the top row to the bottom row appears here once the puzzle is solved.</p>';
+  }
+}
+
+function renderAll(){ renderNote(); renderLevels(); renderShapes(); renderOps(); renderStatus(); }
+
+/* ---------- Events ---------- */
+document.addEventListener('click',function(e){
+  var b=e.target.closest('[data-act]'); if(!b) return;
+  var act=b.dataset.act, i;
+  switch(act){
+    case 'level': touch(); setLevel(+b.dataset.n); renderLevels(); renderOps(); renderStatus(); return;
+    case 'color': S.color=b.dataset.c; renderShapes(); return;
+    case 'pick-top':
+      i=S.top.indexOf(null); if(i<0) return; touch();
+      var sh=SHAPES.filter(function(s){return s.id===b.dataset.shape;})[0];
+      S.top[i]=sym(sh.id,S.color==='auto'?sh.color:S.color); renderShapes(); renderStatus(); return;
+    case 'slot-top': touch(); S.top[+b.dataset.i]=null; renderShapes(); renderStatus(); return;
+    case 'clear-top': touch(); S.top=[null,null,null,null]; renderShapes(); renderStatus(); return;
+    case 'pick-bottom':
+      i=S.bottom.indexOf(null); if(i<0) return; touch();
+      var src=S.top.filter(function(x){return key(x)===b.dataset.key;})[0];
+      S.bottom[i]=sym(src.s,src.c); renderShapes(); renderStatus(); return;
+    case 'slot-bottom': touch(); S.bottom[+b.dataset.i]=null; renderShapes(); renderStatus(); return;
+    case 'clear-bottom': touch(); S.bottom=[null,null,null,null]; renderShapes(); renderStatus(); return;
+    case 'kind': touch(); S.kindsTouched=true; S.rows[+b.dataset.row].kind=b.dataset.kind; renderOps(); renderStatus(); return;
+    case 'all-choose': touch(); S.kindsTouched=true; S.rows.forEach(function(r){ r.kind='choose'; }); renderOps(); renderStatus(); return;
+    case 'default-kinds': touch(); S.kindsTouched=false; setLevel(S.level); renderOps(); renderStatus(); return;
+    case 'copy-opts':
+      touch();
+      var ri=+b.dataset.row; S.rows[ri].opts=S.rows[ri-1].opts.slice();
+      renderOps(); renderStatus(); return;
+    case 'opt-count':
+      touch();
+      var r=S.rows[+b.dataset.row], d=+b.dataset.d;
+      if(d>0 && r.opts.length<5) r.opts.push('');
+      if(d<0 && r.opts.length>2) r.opts.pop();
+      renderOps(); renderStatus(); return;
+    case 'example': loadExample(+b.dataset.n); renderAll(); return;
+    case 'reset':
+      S.top=[null,null,null,null]; S.bottom=[null,null,null,null]; S.rows=[]; S.color='auto'; S.note=''; S.kindsTouched=false;
+      setLevel(S.level); renderAll(); return;
+  }
+});
+opsEl.addEventListener('input',function(e){
+  var el=e.target; if(!el.matches('input')) return;
+  var v=el.value.replace(/[^1-4]/g,'').slice(0,4);
+  if(v!==el.value) el.value=v;
+  var r=S.rows[+el.dataset.row];
+  if(el.dataset.opt===undefined) r.op=v; else r.opts[+el.dataset.opt]=v;
+  touch(); renderStatus();
+  if(v.length===4 && parseOp(v)){
+    var all=Array.prototype.slice.call(opsEl.querySelectorAll('input'));
+    var nxt=all[all.indexOf(el)+1]; if(nxt) nxt.focus();
+  }
+});
+opsEl.addEventListener('focusin',function(e){ if(e.target.matches('input')) e.target.select(); });
+
+// Expose the solver for tests
+window.__solver={analyse:analyse,parseOp:parseOp};
+
+loadExample(2);
+renderAll();
+})();
+</script>
+
+</body></html>
