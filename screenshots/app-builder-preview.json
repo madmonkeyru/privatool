@@ -1,0 +1,36 @@
+{
+  "url": "http://127.0.0.1:8080/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "Ninefold",
+      "hasCanvas": false,
+      "bodyTextLen": 538,
+      "bodyTextHash": "dd83369fad50f769419ab0de8b8873bc55fe4e537f644c87b31da65734251aee",
+      "bodyTextPrefix": "Digits 1–9 Ninefold Tap ×, +, or − in the order they appear. Ent",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "Ninefold",
+      "hasCanvas": false,
+      "bodyTextLen": 538,
+      "bodyTextHash": "dd83369fad50f769419ab0de8b8873bc55fe4e537f644c87b31da65734251aee",
+      "bodyTextPrefix": "Digits 1–9 Ninefold Tap ×, +, or − in the order they appear. Ent",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-preview.json"
+}
