@@ -1,0 +1,1 @@
+import{n as e}from"./index-DdDcu9ct.js";var t=e();function n(){return(0,t.jsx)(`main`,{"aria-label":`Quadrant Dots`,className:`w-full overflow-hidden`,style:{height:`calc(100dvh - 3rem)`},children:(0,t.jsx)(`iframe`,{src:`/tools/quadrant-dots.html`,title:`Quadrant Dots`,className:`h-full w-full border-0`})})}export{n as component};

@@ -1,5 +1,5 @@
 import { i as __toESM } from "../_runtime.mjs";
-import { J as require_react, S as require_jsx_runtime } from "../_libs/@tanstack/react-router+[...].mjs";
+import { J as require_jsx_runtime, q as require_react } from "../_libs/@tanstack/react-router+[...].mjs";
 import { i as Check, r as Copy, t as Undo2 } from "../_libs/lucide-react.mjs";
 //#region node_modules/.nitro/vite/services/ssr/assets/routes-CIU0VZzW.js
 var import_react = /* @__PURE__ */ __toESM(require_react());

@@ -1,1 +1,0 @@
-import{n as e}from"./index-BxbbldBF.js";var t=e();function n(){return(0,t.jsx)(`main`,{"aria-label":`Shape Operator Solver`,className:`w-full overflow-hidden`,style:{height:`calc(100dvh - 3rem)`},children:(0,t.jsx)(`iframe`,{src:`/tools/shape-solver.html`,title:`Shape Operator Solver`,className:`h-full w-full border-0`})})}export{n as component};

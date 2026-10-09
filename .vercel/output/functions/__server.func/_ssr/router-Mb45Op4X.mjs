@@ -1,9 +1,9 @@
 import { i as __toESM, n as __exportAll } from "../_runtime.mjs";
-import { J as require_react, S as require_jsx_runtime, _ as lazyRouteComponent, b as Link, d as Scripts, f as HeadContent, g as Outlet, h as createRouter, p as useLocation, v as createFileRoute, x as useRouter, y as createRootRoute } from "../_libs/@tanstack/react-router+[...].mjs";
+import { J as require_jsx_runtime, _ as lazyRouteComponent, b as Link, d as Scripts, f as HeadContent, g as Outlet, h as createRouter, p as useLocation, q as require_react, v as createFileRoute, x as useRouter, y as createRootRoute } from "../_libs/@tanstack/react-router+[...].mjs";
 import { n as TriangleAlert } from "../_libs/lucide-react.mjs";
 import { a as union, i as string, n as number, r as object, t as literal } from "../_libs/zod.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-CW1DjwQN.js
-var router_CW1DjwQN_exports = /* @__PURE__ */ __exportAll({ getRouter: () => getRouter });
+//#region node_modules/.nitro/vite/services/ssr/assets/router-Mb45Op4X.js
+var router_Mb45Op4X_exports = /* @__PURE__ */ __exportAll({ getRouter: () => getRouter });
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var FALLBACK_MESSAGE = "An unexpected error occurred. Try reloading the page.";
@@ -297,33 +297,36 @@ function PreviewHostBridge() {
 	}, [router]);
 	return null;
 }
+var TOOLS = [
+	{
+		to: "/",
+		label: "Ninefold"
+	},
+	{
+		to: "/shape",
+		label: "Shapes"
+	},
+	{
+		to: "/quadrant",
+		label: "Dots"
+	}
+];
 function ToolSwitch() {
 	const pathname = useLocation({ select: (loc) => loc.pathname });
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("nav", {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("nav", {
 		"aria-label": "Tools",
 		className: "flex items-center gap-0.5 rounded-full border border-line bg-surface p-1",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SwitchItem, {
-			to: "/",
-			active: pathname === "/",
-			label: "Ninefold"
-		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SwitchItem, {
-			to: "/shape",
-			active: pathname === "/shape",
-			label: "Shape Solver"
-		})]
-	});
-}
-function SwitchItem({ to, active, label }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Link, {
-		to,
-		"aria-current": active ? "page" : void 0,
-		className: "rounded-full px-3 py-1.5 text-sm font-medium transition-colors " + (active ? "bg-ink text-surface" : "text-muted hover:text-ink"),
-		children: label
+		children: TOOLS.map((tool) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Link, {
+			to: tool.to,
+			"aria-current": pathname === tool.to ? "page" : void 0,
+			className: "rounded-full px-3 py-1.5 text-sm font-medium transition-colors " + (pathname === tool.to ? "bg-ink text-surface" : "text-muted hover:text-ink"),
+			children: tool.label
+		}, tool.to))
 	});
 }
 var styles_default = "/assets/styles-DivrsDXi.css";
 var APP_NAME = "Ninefold";
-var Route$2 = createRootRoute({
+var Route$3 = createRootRoute({
 	head: () => ({
 		meta: [
 			{ charSet: "utf-8" },
@@ -383,23 +386,30 @@ var Route$2 = createRootRoute({
 		] })]
 	})
 });
-var $$splitComponentImporter$1 = () => import("./routes-CIU0VZzW.mjs");
-var Route$1 = createFileRoute("/")({ component: lazyRouteComponent($$splitComponentImporter$1, "component") });
+var $$splitComponentImporter$2 = () => import("./routes-CIU0VZzW.mjs");
+var Route$2 = createFileRoute("/")({ component: lazyRouteComponent($$splitComponentImporter$2, "component") });
+var $$splitComponentImporter$1 = () => import("./quadrant-DtsygPaW.mjs");
+var Route$1 = createFileRoute("/quadrant")({ component: lazyRouteComponent($$splitComponentImporter$1, "component") });
 var $$splitComponentImporter = () => import("./shape-B-QoEyLa.mjs");
 var Route = createFileRoute("/shape")({ component: lazyRouteComponent($$splitComponentImporter, "component") });
 var rootRouteChildren = {
-	IndexRoute: Route$1.update({
+	IndexRoute: Route$2.update({
 		id: "/",
 		path: "/",
-		getParentRoute: () => Route$2
+		getParentRoute: () => Route$3
+	}),
+	QuadrantRoute: Route$1.update({
+		id: "/quadrant",
+		path: "/quadrant",
+		getParentRoute: () => Route$3
 	}),
 	ShapeRoute: Route.update({
 		id: "/shape",
 		path: "/shape",
-		getParentRoute: () => Route$2
+		getParentRoute: () => Route$3
 	})
 };
-var routeTree = Route$2._addFileChildren(rootRouteChildren)._addFileTypes();
+var routeTree = Route$3._addFileChildren(rootRouteChildren)._addFileTypes();
 function getRouter() {
 	return createRouter({
 		routeTree,
@@ -407,4 +417,4 @@ function getRouter() {
 	});
 }
 //#endregion
-export { getRouter, router_CW1DjwQN_exports as t };
+export { getRouter, router_Mb45Op4X_exports as t };

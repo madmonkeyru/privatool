@@ -1,0 +1,584 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Quadrant Dots</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one-screen tool. Four big quadrant buttons form a 2x2 board split by a crosshair, the way the player splits the dot grid in their head. The only color is the accent: the colored dot. */
+:root {
+  --bg: #ECEEF2;
+  --surface: #F7F8FA;
+  --ink: #151922;
+  --ink-2: #596273;
+  --line: #CBD1DB;
+  --dotgrid: #B7BECB;
+  --accent: #D6336C;
+  --on-accent: #FFFFFF;
+  --accent-soft: #F9DDE8;
+  --display: 'Bricolage Grotesque', ui-rounded, 'Segoe UI', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11141A;
+    --surface: #1A1E27;
+    --ink: #EDEFF4;
+    --ink-2: #98A1B1;
+    --line: #2C3340;
+    --dotgrid: #363E4D;
+    --accent: #FF6A9B;
+    --on-accent: #1B0A12;
+    --accent-soft: #3B1A29;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11141A;
+  --surface: #1A1E27;
+  --ink: #EDEFF4;
+  --ink-2: #98A1B1;
+  --line: #2C3340;
+  --dotgrid: #363E4D;
+  --accent: #FF6A9B;
+  --on-accent: #1B0A12;
+  --accent-soft: #3B1A29;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  padding-inline: 16px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 16px;
+  line-height: 1.4;
+  -webkit-text-size-adjust: 100%;
+}
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+.app {
+  height: 100%;
+  max-width: 640px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-block: 14px 12px;
+}
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+h1 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+h1::before { content: ''; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); }
+.count { margin: 0; font-family: var(--mono); font-size: 0.78rem; color: var(--ink-2); text-align: right; }
+
+.view { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+.hint { margin: 0; min-height: calc(1.4em * 2); font-size: 0.92rem; color: var(--ink-2); max-width: 60ch; text-wrap: pretty; }
+.hint-n {
+  margin-right: 6px;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+/* Board */
+.board {
+  position: relative;
+  flex: 1;
+  min-height: 260px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 12px;
+}
+.board::before, .board::after { content: ''; position: absolute; background: var(--line); }
+.board::before { left: 50%; top: 0; bottom: 0; width: 1px; margin-left: -0.5px; }
+.board::after { top: 50%; left: 0; right: 0; height: 1px; margin-top: -0.5px; }
+
+.tile {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 1.5px solid var(--line);
+  border-radius: 22px;
+  background-color: var(--surface);
+  background-image: radial-gradient(circle, var(--dotgrid) 1.3px, transparent 1.7px);
+  background-size: 22px 22px;
+  background-position: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.12s, box-shadow 0.12s, transform 0.08s;
+}
+.tile:active { transform: scale(0.985); }
+.tile.is-active { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.tile-label {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.tile.is-active .tile-label { color: var(--ink); }
+.tile-key {
+  display: none;
+  position: absolute;
+  top: 11px;
+  right: 14px;
+  padding: 1px 7px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--ink-2);
+}
+@media (hover: hover) and (pointer: fine) { .tile-key { display: block; } }
+
+.disc { width: min(62%, 9rem, 18vh); height: auto; aspect-ratio: 1; overflow: visible; }
+.disc-empty { fill: none; stroke: var(--ink-2); opacity: 0.5; stroke-width: 2; stroke-dasharray: 2 7; stroke-linecap: round; }
+.disc-full { display: none; }
+.is-active .disc-empty { display: none; }
+.is-active .disc-full { display: inline; }
+.disc-full circle { fill: var(--accent); }
+.disc-full text { fill: var(--on-accent); font-family: var(--display); font-weight: 800; font-size: 58px; }
+.disc.pop { animation: pop 0.18s ease-out; }
+@keyframes pop { 0% { transform: scale(0.82); } 60% { transform: scale(1.06); } 100% { transform: scale(1); } }
+
+/* Log of dots */
+.log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 8px;
+  min-height: 76px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 12px 0 5px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+.chip.is-open { border-color: var(--accent); background: var(--accent-soft); }
+.chip-n {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+.chip-pos { font-weight: 500; }
+.log-empty { align-self: center; font-family: var(--mono); font-size: 0.8rem; color: var(--ink-2); }
+
+/* Action bars */
+.actions { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 10px; }
+.actions.two { grid-template-columns: 1fr 1fr; }
+.btn {
+  min-height: 58px;
+  padding: 0 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s, background-color 0.12s, border-color 0.12s;
+}
+.btn:active:not(:disabled) { transform: scale(0.98); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn.primary { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.btn.is-armed { border-color: var(--accent); color: var(--accent); }
+.btn.primary.is-armed { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+
+/* Result */
+.scroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 22px; padding-bottom: 4px; }
+.eyebrow { margin: 0 0 6px; font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-2); }
+.answers { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.answers li {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.ans-n { font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); }
+.ans-q { min-width: 0; font-size: 1.25rem; font-weight: 600; }
+.dotn {
+  --s: 38px;
+  display: grid;
+  place-items: center;
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 800;
+  line-height: 1;
+  font-size: calc(var(--s) * 0.5);
+}
+.map { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cell {
+  min-width: 0;
+  min-height: 104px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.cell-name { margin: 0; font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-2); }
+.pips { display: flex; flex-wrap: wrap; gap: 10px; }
+.pip { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.pip-n { font-family: var(--mono); font-size: 0.64rem; color: var(--ink-2); }
+.none { margin: 0; font-family: var(--mono); font-size: 0.8rem; color: var(--ink-2); }
+
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+</style>
+
+<div class="app">
+  <header class="top">
+    <h1>Quadrant Dots</h1>
+    <p class="count" id="count">No dots logged</p>
+  </header>
+
+  <section class="view" id="viewInput">
+    <p class="hint" id="hint"></p>
+
+    <div class="board" id="board">
+      <button class="tile" type="button" data-q="0" aria-keyshortcuts="Q">
+        <span class="tile-label">Top left</span>
+        <span class="tile-key" aria-hidden="true">Q</span>
+        <svg class="disc" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+          <circle class="disc-empty" cx="50" cy="50" r="46"/>
+          <g class="disc-full"><circle cx="50" cy="50" r="48"/><text x="50" y="50" dy=".35em" text-anchor="middle"></text></g>
+        </svg>
+      </button>
+      <button class="tile" type="button" data-q="1" aria-keyshortcuts="W">
+        <span class="tile-label">Top right</span>
+        <span class="tile-key" aria-hidden="true">W</span>
+        <svg class="disc" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+          <circle class="disc-empty" cx="50" cy="50" r="46"/>
+          <g class="disc-full"><circle cx="50" cy="50" r="48"/><text x="50" y="50" dy=".35em" text-anchor="middle"></text></g>
+        </svg>
+      </button>
+      <button class="tile" type="button" data-q="2" aria-keyshortcuts="A">
+        <span class="tile-label">Bottom left</span>
+        <span class="tile-key" aria-hidden="true">A</span>
+        <svg class="disc" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+          <circle class="disc-empty" cx="50" cy="50" r="46"/>
+          <g class="disc-full"><circle cx="50" cy="50" r="48"/><text x="50" y="50" dy=".35em" text-anchor="middle"></text></g>
+        </svg>
+      </button>
+      <button class="tile" type="button" data-q="3" aria-keyshortcuts="S">
+        <span class="tile-label">Bottom right</span>
+        <span class="tile-key" aria-hidden="true">S</span>
+        <svg class="disc" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+          <circle class="disc-empty" cx="50" cy="50" r="46"/>
+          <g class="disc-full"><circle cx="50" cy="50" r="48"/><text x="50" y="50" dy=".35em" text-anchor="middle"></text></g>
+        </svg>
+      </button>
+    </div>
+
+    <ul class="log" id="log" aria-label="Dots logged so far"></ul>
+
+    <div class="actions">
+      <button class="btn" id="undo" type="button" title="Undo (Backspace)">Undo</button>
+      <button class="btn" id="next" type="button" title="Next dot (N)">Next dot</button>
+      <button class="btn primary" id="finish" type="button" title="Finish (F)">Finish</button>
+    </div>
+  </section>
+
+  <section class="view" id="viewResult" hidden>
+    <div class="scroll" id="scroll">
+      <div>
+        <p class="eyebrow">Dots in order</p>
+        <ol class="answers" id="answers"></ol>
+      </div>
+      <div>
+        <p class="eyebrow">By quadrant</p>
+        <div class="map" id="map"></div>
+      </div>
+    </div>
+    <div class="actions two">
+      <button class="btn" id="edit" type="button">Keep editing</button>
+      <button class="btn primary" id="reset" type="button">New round</button>
+    </div>
+  </section>
+
+  <div class="sr" id="live" aria-live="polite"></div>
+</div>
+
+<script>
+(function () {
+  var KEY = 'quadrant-dots-v1';
+  var QUADS = [
+    { name: 'Top left', short: 'TL' },
+    { name: 'Top right', short: 'TR' },
+    { name: 'Bottom left', short: 'BL' },
+    { name: 'Bottom right', short: 'BR' }
+  ];
+  var MAX_POS = 9;
+
+  function fresh() { return { entries: [], open: false, view: 'input', history: [] }; }
+  var state = fresh();
+
+  function $(id) { return document.getElementById(id); }
+  var els = {
+    count: $('count'), hint: $('hint'), log: $('log'),
+    tiles: Array.prototype.slice.call(document.querySelectorAll('.tile')),
+    undo: $('undo'), next: $('next'), finish: $('finish'),
+    vIn: $('viewInput'), vRes: $('viewResult'), scroll: $('scroll'),
+    ans: $('answers'), map: $('map'), edit: $('edit'), reset: $('reset'), live: $('live')
+  };
+
+  /* ---------- storage ---------- */
+  function readStorage() {
+    try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; }
+  }
+  function persist() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+  function sanitize(s) {
+    if (!s || !Array.isArray(s.entries)) return null;
+    var entries = s.entries.filter(function (e) {
+      return e && Number.isInteger(e.q) && e.q >= 0 && e.q < 4 &&
+             Number.isInteger(e.pos) && e.pos >= 1 && e.pos <= MAX_POS;
+    }).map(function (e) { return { q: e.q, pos: e.pos }; });
+    var history = Array.isArray(s.history)
+      ? s.history.filter(function (h) { return typeof h === 'string'; }).slice(-80)
+      : [];
+    return {
+      entries: entries,
+      open: !!s.open && entries.length > 0,
+      view: s.view === 'result' && entries.length > 0 ? 'result' : 'input',
+      history: history
+    };
+  }
+
+  /* ---------- actions ---------- */
+  function snapshot() { return JSON.stringify({ entries: state.entries, open: state.open }); }
+  function pushHistory() {
+    state.history.push(snapshot());
+    if (state.history.length > 80) state.history.shift();
+  }
+  function commit(qi) {
+    persist();
+    render();
+    if (typeof qi === 'number') {
+      var last = state.entries[state.entries.length - 1];
+      pop(qi);
+      els.live.textContent = QUADS[qi].name + ', position ' + last.pos;
+    }
+  }
+  function tap(qi) {
+    pushHistory();
+    var last = state.entries[state.entries.length - 1];
+    if (state.open && last && last.q === qi) {
+      last.pos = (last.pos % MAX_POS) + 1;
+    } else {
+      state.entries.push({ q: qi, pos: 1 });
+      state.open = true;
+    }
+    commit(qi);
+  }
+  function nextDot() {
+    if (!state.open) return;
+    pushHistory();
+    state.open = false;
+    commit();
+  }
+  function undo() {
+    if (!state.history.length) return;
+    var s;
+    try { s = JSON.parse(state.history.pop()); } catch (e) { s = null; }
+    if (s && Array.isArray(s.entries)) {
+      state.entries = s.entries;
+      state.open = !!s.open;
+    }
+    commit();
+  }
+  function finish() {
+    if (!state.entries.length) return;
+    state.view = 'result';
+    persist();
+    render();
+    els.scroll.scrollTop = 0;
+  }
+  function pop(qi) {
+    var d = els.tiles[qi].querySelector('.disc');
+    d.classList.remove('pop');
+    void d.getBoundingClientRect();
+    d.classList.add('pop');
+  }
+
+  /* ---------- rendering ---------- */
+  function hintHTML() {
+    var n = state.entries.length;
+    if (state.open) {
+      return '<span class="hint-n">Dot ' + n + '</span>Tap again to raise its number. Tap another quadrant, or Next dot, to start dot ' + (n + 1) + '.';
+    }
+    return '<span class="hint-n">Dot ' + (n + 1) + '</span>Tap the quadrant it sits in. Tap again to raise its number.';
+  }
+
+  function render() {
+    var n = state.entries.length;
+    var last = state.entries[n - 1];
+    els.count.textContent = n === 0 ? 'No dots logged' : n + (n === 1 ? ' dot' : ' dots') + ' logged';
+    els.vIn.hidden = state.view !== 'input';
+    els.vRes.hidden = state.view !== 'result';
+    if (state.view === 'result') { renderResult(); return; }
+
+    els.tiles.forEach(function (t, i) {
+      var active = !!(state.open && last && last.q === i);
+      t.classList.toggle('is-active', active);
+      t.querySelector('.disc-full text').textContent = active ? String(last.pos) : '';
+      t.setAttribute('aria-label', QUADS[i].name + (active ? ', position ' + last.pos + '. Tap to raise it.' : '. Tap to place a dot.'));
+    });
+
+    els.hint.innerHTML = hintHTML();
+
+    if (n === 0) {
+      els.log.innerHTML = '<li class="log-empty">Nothing logged yet.</li>';
+    } else {
+      els.log.innerHTML = state.entries.map(function (e, i) {
+        var isOpen = state.open && i === n - 1;
+        return '<li class="chip' + (isOpen ? ' is-open' : '') + '" aria-label="Dot ' + (i + 1) + ', ' + QUADS[e.q].name + ', position ' + e.pos + '">' +
+          '<span class="chip-n">' + (i + 1) + '</span>' +
+          '<span class="chip-q">' + QUADS[e.q].short + '</span>' +
+          '<span class="chip-pos">' + e.pos + '</span></li>';
+      }).join('');
+    }
+
+    els.undo.disabled = !state.history.length;
+    els.next.disabled = !state.open;
+    els.finish.disabled = n === 0;
+  }
+
+  function renderResult() {
+    els.ans.innerHTML = state.entries.map(function (e, i) {
+      return '<li><span class="ans-n">Dot ' + (i + 1) + '</span>' +
+        '<span class="ans-q">' + QUADS[e.q].name + '</span>' +
+        '<span class="dotn" style="--s:46px" aria-label="position ' + e.pos + '">' + e.pos + '</span></li>';
+    }).join('');
+
+    els.map.innerHTML = QUADS.map(function (qd, qi) {
+      var pips = state.entries.map(function (e, i) {
+        return e.q === qi
+          ? '<div class="pip"><span class="dotn">' + e.pos + '</span><span class="pip-n">dot ' + (i + 1) + '</span></div>'
+          : '';
+      }).join('');
+      return '<div class="cell"><p class="cell-name">' + qd.name + '</p>' +
+        (pips ? '<div class="pips">' + pips + '</div>' : '<p class="none">No dots</p>') + '</div>';
+    }).join('');
+  }
+
+  /* ---------- wiring ---------- */
+  var armTimer = null;
+  function disarm() {
+    clearTimeout(armTimer);
+    armTimer = null;
+    els.reset.classList.remove('is-armed');
+    els.reset.textContent = 'New round';
+  }
+
+  function bind() {
+    els.tiles.forEach(function (t, i) {
+      t.addEventListener('click', function () { tap(i); });
+    });
+    els.undo.addEventListener('click', undo);
+    els.next.addEventListener('click', nextDot);
+    els.finish.addEventListener('click', finish);
+    els.edit.addEventListener('click', function () {
+      disarm();
+      state.view = 'input';
+      persist();
+      render();
+    });
+    els.reset.addEventListener('click', function () {
+      if (!armTimer) {
+        els.reset.classList.add('is-armed');
+        els.reset.textContent = 'Tap again to clear';
+        armTimer = setTimeout(disarm, 3000);
+        return;
+      }
+      disarm();
+      state = fresh();
+      persist();
+      render();
+    });
+    document.addEventListener('keydown', function (ev) {
+      if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.repeat) return;
+      if (state.view !== 'input') return;
+      var k = ev.key.toLowerCase();
+      var qi = k.length === 1 ? 'qwas'.indexOf(k) : -1;
+      if (qi > -1) { ev.preventDefault(); tap(qi); }
+      else if (k === 'n') { nextDot(); }
+      else if (k === 'backspace') { ev.preventDefault(); undo(); }
+      else if (k === 'f') { finish(); }
+    });
+  }
+
+  function start(data) {
+    var restored = sanitize(data && data.state) || sanitize(readStorage());
+    if (restored) state = restored;
+    bind();
+    render();
+  }
+
+  try {
+    var hot = window.claude && window.claude.hot;
+    if (hot && typeof hot.snapshot === 'function') {
+      hot.snapshot(function () { return { state: state }; });
+    }
+  } catch (e) {}
+  var hotApi = window.claude && window.claude.hot;
+  if (hotApi && hotApi.ready) hotApi.ready(start);
+  else start((hotApi && hotApi.data) || {});
+})();
+</script>
+
+</body></html>

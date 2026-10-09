@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as QuadrantRouteImport } from './routes/quadrant'
 import { Route as ShapeRouteImport } from './routes/shape'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuadrantRoute = QuadrantRouteImport.update({
+  id: '/quadrant',
+  path: '/quadrant',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShapeRoute = ShapeRouteImport.update({
@@ -25,27 +31,31 @@ const ShapeRoute = ShapeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/quadrant': typeof QuadrantRoute
   '/shape': typeof ShapeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/quadrant': typeof QuadrantRoute
   '/shape': typeof ShapeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/quadrant': typeof QuadrantRoute
   '/shape': typeof ShapeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/shape'
+  fullPaths: '/' | '/quadrant' | '/shape'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/shape'
-  id: '__root__' | '/' | '/shape'
+  to: '/' | '/quadrant' | '/shape'
+  id: '__root__' | '/' | '/quadrant' | '/shape'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  QuadrantRoute: typeof QuadrantRoute
   ShapeRoute: typeof ShapeRoute
 }
 
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quadrant': {
+      id: '/quadrant'
+      path: '/quadrant'
+      fullPath: '/quadrant'
+      preLoaderRoute: typeof QuadrantRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/shape': {
@@ -70,6 +87,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  QuadrantRoute: QuadrantRoute,
   ShapeRoute: ShapeRoute,
 }
 export const routeTree = rootRouteImport
