@@ -63,7 +63,7 @@ h1{margin:0;font-size:22px;font-weight:600;letter-spacing:-.01em}
 .block>h2{margin:0;font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .block>h2 .btn{text-transform:none;letter-spacing:0;font-weight:400;padding:3px 9px;font-size:12px}
 .kindtools{display:inline-flex;gap:6px}
-.levels{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.levels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .lvl{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 4px;display:grid;gap:1px;text-align:center}
 .lvl b{font-weight:600;font-size:14px}
 .lvl span{font-size:12px;color:var(--muted)}
@@ -233,9 +233,12 @@ function analyse(inp){
       cands.push(list.length?list:null);
     }
   }
-  var res=search(top,bottom,cands);
+  var LIMIT=2000000,bound=1;
+  for(i=0;i<cands.length;i++){ bound*=(cands[i]?cands[i].length:PERMS.length); if(bound>LIMIT) break; }
+  var res=bound>LIMIT?null:search(top,bottom,cands);
   var unknown=[]; rows.forEach(function(r,k){ if(r.kind==='choose') unknown.push(k); });
   var free=unknown.filter(function(k){return cands[k]===null;});
+  if(res===null) return {state:'overflow',freeCount:free.length};
   if(res.total===0) return {state:'none',hasChoice:unknown.length>0};
   if(res.total===1){
     var sol=res.sols[0],seqs=[top];
@@ -280,7 +283,7 @@ function colorName(c){ for(var i=0;i<COLORS.length;i++) if(COLORS[i][0]===c) ret
 function symLabel(x){ return colorName(x.c)+' '+shapeName(x.s).toLowerCase(); }
 
 /* ---------- State ---------- */
-var LEVELS=[['Easy',1],['Medium',2],['Hard',3],['Expert',4]];
+var LEVELS=[['Easy',1],['Medium',2],['Hard',3],['Expert',4],['Master',5],['Grandmaster',6]];
 var S={level:3,top:[null,null,null,null],bottom:[null,null,null,null],rows:[],color:'auto',note:'',kindsTouched:false};
 function blankRow(kind){ return {kind:kind,op:'',opts:['','','']}; }
 // Changing difficulty keeps any Given/Choose setup the user made; new rows copy the last row's type.
@@ -411,6 +414,9 @@ function renderStatus(){
   } else if(R.state==='none'){
     a.classList.add('err');
     html='<span class="k">No match</span><p class="msg">'+(R.hasChoice?'None of the options fit these shapes. ':'These operators do not turn the top row into the bottom row. ')+'Check the shape order, the order of the operators and each digit.</p>';
+  } else if(R.state==='overflow'){
+    a.classList.add('err');
+    html='<span class="k">Too many combinations</span><p class="msg">'+(R.freeCount>0?'Enter the options (or set Given) for every Choose row to narrow it down.':'Enter the digits for each operator to narrow it down.')+'</p>';
   } else if(R.state==='multi'){
     a.classList.add('err');
     var shown=R.sols.slice(0,6).map(function(sol){
